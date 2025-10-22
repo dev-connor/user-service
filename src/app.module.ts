@@ -6,8 +6,9 @@ import { UserService } from './user/user.service';
 import { UserController } from './user/user.controller';
 import { UserModule } from './user/user.module';
 import { DataSource } from 'typeorm';
-import { User } from './entities/User';
-import { RefreshToken } from './entities/RefreshToken';
+import { AuthModule } from './auth/auth.module';
+import { User } from './user/entities/User';
+import { RefreshToken } from './auth/entities/RefreshToken';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { RefreshToken } from './entities/RefreshToken';
       synchronize: false,
     }),
     UserModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

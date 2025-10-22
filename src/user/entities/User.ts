@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm"
-import { RefreshToken } from "./RefreshToken"
+import { RefreshToken } from "../../auth/entities/RefreshToken"
 
 @Index("user_pkey", ["id"], { unique: true })
 @Entity("user", { schema: "app" })
@@ -33,10 +33,9 @@ export class User {
 
   @Column("character varying", { name: "name" })
   name: string 
-
-  @OneToOne(() => RefreshToken)
-  @JoinColumn({ name: "token_id" })
-  refreshToken: RefreshToken
+  
+  @Column("character varying", { name: "refresh_token_id" })
+  refreshTokenId: string
 
   @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt: Date
