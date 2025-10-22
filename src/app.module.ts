@@ -5,8 +5,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserService } from './user/user.service';
 import { UserController } from './user/user.controller';
 import { UserModule } from './user/user.module';
-import { User } from './user/entities/user.entity';
 import { DataSource } from 'typeorm';
+import { User } from './entities/User';
+import { RefreshToken } from './entities/RefreshToken';
 
 @Module({
   imports: [
@@ -18,8 +19,8 @@ import { DataSource } from 'typeorm';
       password: 'proto-pie',
       database: 'app_db',
       schema: 'app', 
-      entities: [User],
-      synchronize: true,
+      entities: [User, RefreshToken],
+      synchronize: false,
     }),
     UserModule,
   ],
