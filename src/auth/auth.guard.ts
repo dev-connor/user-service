@@ -60,6 +60,9 @@ export class OwnershipGuard implements CanActivate {
   }
 
   private hasOwnership(request, tokenPayload): boolean {
+    if (tokenPayload.role === "admin") {
+      return true
+    }
     const { userId } = request.params
     return tokenPayload.sub === userId
   }

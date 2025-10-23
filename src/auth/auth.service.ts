@@ -3,7 +3,6 @@ import { JwtService } from "@nestjs/jwt"
 import { InjectRepository } from "@nestjs/typeorm"
 import { Repository } from "typeorm"
 import * as bcrypt from "bcrypt"
-import { SignUpDto } from "./dto/signup.dto"
 import { UserMapper } from "../user/mapper/user.mapper"
 import { User } from "../user/entities/User"
 import { randomBytes } from "crypto"
@@ -11,28 +10,26 @@ import { RefreshToken } from "./entities/RefreshToken"
 import { RefreshTokenMapper } from "./mapper/refreshToken.mapper"
 import * as ms from "ms"
 import { REFRESH_TOKEN_EXPIRE_IN } from "./constants"
+import { UserService } from "../user/user.service"
+import { SignUpRequest } from "./dto/signup.dto"
 
 @Injectable()
 export class AuthService {
   constructor(
     private jwtService: JwtService,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-
+    private userService: UserService,
     @InjectRepository(RefreshToken)
     private refreshTokenRepository: Repository<RefreshToken>,
   ) {}
 
-  async signUp(requestBody: SignUpDto) {
+  async signUp(requestBody: SignUpRequest) {
     requestBody.password = await bcrypt.hash(requestBody.password, 10)
-    await this.userRepository.save(UserMapper.toEntity(requestBody))
-    return "This action adds a new user"
+    await this.userService.save(UserMapper.toEntity(requestBody))
+    return "ok"
   }
 
   async signIn(email: string, password: string) {
-    const user = await this.userRepository.findOneBy({
-      email: email,
-    })
+    const user = await this.userService.findOneByEmail(email)
     if (user === null) {
       throw new UnauthorizedException(
         `signin failed. Email(${email}) not found`,
@@ -51,7 +48,7 @@ export class AuthService {
         ),
       )
       user.refreshTokenId = refreshTokenEntity.id
-      await this.userRepository.save(user)
+      await this.userService.save(user)
 
       return {
         accessToken: accessToken,

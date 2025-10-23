@@ -6,6 +6,7 @@ import { TypeOrmModule } from "@nestjs/typeorm"
 import { User } from "../user/entities/User"
 import { ACCESS_TOKEN_EXPIRE_IN, JWT_SECRET } from "./constants"
 import { RefreshToken } from "./entities/RefreshToken"
+import { UserModule } from "../user/user.module"
 
 @Module({
   imports: [
@@ -14,7 +15,8 @@ import { RefreshToken } from "./entities/RefreshToken"
       secret: JWT_SECRET.secret,
       signOptions: { expiresIn: ACCESS_TOKEN_EXPIRE_IN },
     }),
-    TypeOrmModule.forFeature([User, RefreshToken]),
+    TypeOrmModule.forFeature([RefreshToken]),
+    UserModule, 
   ],
   controllers: [AuthController],
   providers: [AuthService],

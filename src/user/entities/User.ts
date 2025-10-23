@@ -13,15 +13,6 @@ import { RefreshToken } from "../../auth/entities/RefreshToken"
 @Index("user_pkey", ["id"], { unique: true })
 @Entity("user", { schema: "app" })
 export class User {
-  // constructor(partial?: Partial<User>) {
-  //   if (partial) {
-  //     Object.entries(partial).forEach(([key, value]) => {
-  //       if (value !== null) this[key] = value
-  //     })
-  //   }
-  // }
-
-  // @Column("character varying", { primary: true, name: "id" })
   @PrimaryGeneratedColumn("uuid")
   id: string
 
