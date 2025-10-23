@@ -6,12 +6,11 @@ import * as bcrypt from "bcrypt"
 import { SignUpDto } from "./dto/signup.dto"
 import { UserMapper } from "../user/mapper/user.mapper"
 import { User } from "../user/entities/User"
-import { randomBytes } from 'crypto';
+import { randomBytes } from "crypto"
 import { RefreshToken } from "./entities/RefreshToken"
 import { RefreshTokenMapper } from "./mapper/refreshToken.mapper"
-import * as ms from 'ms';
+import * as ms from "ms"
 import { REFRESH_TOKEN_EXPIRE_IN } from "./constants"
-
 
 @Injectable()
 export class AuthService {
@@ -40,17 +39,23 @@ export class AuthService {
       )
     }
     const passwordMatch = await bcrypt.compare(password, user.passwordHash)
+    const role = this.getRole(user.email)
     if (passwordMatch) {
-      const payload = {sub: user.id, role: "member"}
-      const accessToken = await this.jwtService.signAsync(payload) 
+      const payload = { sub: user.id, role: role }
+      const accessToken = await this.jwtService.signAsync(payload)
       const refreshToken = this.generateRefreshToken()
-      const refreshTokenEntity = await this.refreshTokenRepository.save(RefreshTokenMapper.toEntity(await bcrypt.hash(refreshToken, 10), new Date(Date.now() + ms(REFRESH_TOKEN_EXPIRE_IN))))
+      const refreshTokenEntity = await this.refreshTokenRepository.save(
+        RefreshTokenMapper.toEntity(
+          await bcrypt.hash(refreshToken, 10),
+          new Date(Date.now() + ms(REFRESH_TOKEN_EXPIRE_IN)),
+        ),
+      )
       user.refreshTokenId = refreshTokenEntity.id
       await this.userRepository.save(user)
-      
+
       return {
         accessToken: accessToken,
-        refreshToken: refreshToken, 
+        refreshToken: refreshToken,
       }
     } else {
       throw new UnauthorizedException("signin failed. password invalid")
@@ -59,5 +64,9 @@ export class AuthService {
 
   generateRefreshToken(): string {
     return randomBytes(64).toString("hex")
+  }
+
+  private getRole(email: string): string {
+    return email.endsWith("protopie.io") ? "admin" : "member"
   }
 }

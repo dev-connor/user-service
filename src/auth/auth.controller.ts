@@ -6,11 +6,13 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
 } from "@nestjs/common"
 import { AuthService } from "./auth.service"
 import { ApiOperation } from "@nestjs/swagger"
 import { SignUpDto } from "./dto/signup.dto"
 import { SignInDto } from "./dto/signin.dto"
+import { OwnershipGuard } from "./auth.guard"
 
 @Controller()
 export class AuthController {

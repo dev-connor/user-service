@@ -34,8 +34,8 @@ export class User {
   @Column("character varying", { name: "name" })
   name: string 
   
-  @Column("character varying", { name: "refresh_token_id" })
-  refreshTokenId: string
+  @Column("character varying", { name: "refresh_token_id", nullable: true })
+  refreshTokenId: string | null 
 
   @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt: Date
