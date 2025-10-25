@@ -25,8 +25,6 @@ Event-driven microservices 를 적용하기로 결정했습니다.
 
 해당 기능의 구현 내용과 목적, 기술 선택 이유 등을 설명합니다.
 
-## 🧩 User Deletion Flow (비동기 처리 구조)
-
 사용자 탈퇴 요청 시, API Gateway가 메시지 큐(RabbitMQ)에 이벤트를 발행하고,  
 Worker Service가 비동기로 이메일 발송 및 S3 파일 삭제를 수행하는 구조입니다.
 

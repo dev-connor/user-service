@@ -40,19 +40,26 @@ export class AuthService {
     if (passwordMatch) {
       const payload = { sub: user.id, role: role }
       const accessToken = await this.jwtService.signAsync(payload)
-      const refreshToken = this.generateRefreshToken()
-      const refreshTokenEntity = await this.refreshTokenRepository.save(
-        RefreshTokenMapper.toEntity(
-          await bcrypt.hash(refreshToken, 10),
-          new Date(Date.now() + ms(REFRESH_TOKEN_EXPIRE_IN)),
-        ),
-      )
-      user.refreshTokenId = refreshTokenEntity.id
-      await this.userService.save(user)
 
+      const newRefreshToken = this.generateRefreshToken()
+      const newRefreshTokenHash = await this.hashToken(newRefreshToken)
+      const optionalRefreshToken = await this.refreshTokenRepository.findOneBy({
+        id: user.refreshTokenId,
+      })
+
+      const entity = RefreshTokenMapper.toUpsertEntity(
+        optionalRefreshToken,
+        newRefreshTokenHash,
+      )
+      const saved = await this.refreshTokenRepository.save(entity)
+
+      if (!optionalRefreshToken) {
+        user.refreshTokenId = saved.id
+        await this.userService.save(user)
+      }
       return {
         accessToken: accessToken,
-        refreshToken: refreshToken,
+        refreshToken: newRefreshToken,
       }
     } else {
       throw new UnauthorizedException("signin failed. password invalid")
@@ -63,7 +70,11 @@ export class AuthService {
     return randomBytes(64).toString("hex")
   }
 
-  private getRole(email: string): string {
+  async hashToken(token: string): Promise<string> {
+    return await bcrypt.hash(token, 10)
+  }
+
+  getRole(email: string): string {
     return email.endsWith("protopie.io") ? "admin" : "member"
   }
 }
