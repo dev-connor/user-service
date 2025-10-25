@@ -1,73 +1,83 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# 프로젝트 설정 및 실행 방법
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Installation
+Docker Compose 실행 방법
 
 ```bash
-$ npm install
+docker-compose up -d 
 ```
 
-## Running the app
+테스트코드 실행방법
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm run test 
 ```
 
-## Test
+# 사용된 기술 스택 및 라이브러리
 
-```bash
-# unit tests
-$ npm run test
+TypeScript, NestJS, RabbitMQ 
 
-# e2e tests
-$ npm run test:e2e
+# 설계 결정 이유 
 
-# test coverage
-$ npm run test:cov
+Event-driven microservices 를 적용하기로 결정했습니다. 
+
+# 문제 해결 과정 및 고민 
+
+user DB, worker DB 를 분리할까 하나로 할까를 고민했습니다.
+DB 에 비동기 처리에 대한 칼럼을 만들고 worker 에서 DB 를 조회하고 MQ 와 sync 를 맞추는 방향에 대해 고민하다 적용하지 않았습니다. 
+
+# 비동기 처리 설명 
+
+사용자 탈퇴 요청 시, API Gateway가 메시지 큐(RabbitMQ)에 이벤트를 발행하고,  
+Worker Service가 비동기로 이메일 발송 및 S3 파일 삭제를 수행하는 구조입니다.
+
+---
+
+### 🧭 전체 시퀀스 다이어그램
+
+```mermaid
+sequenceDiagram
+    participant C as 🧑 Client
+    participant G as 🌐 API Gateway
+    participant MQ as 📬 Message Queue (RabbitMQ)
+    participant DB as 🗄️ User DB
+    participant W as ⚙️ Worker Service
+    participant WD as 🗃️ Worker DB
+    participant S3 as ☁️ AWS S3
+
+    C->>G: DELETE /users/{userId} (탈퇴 요청)
+    Note right of G: 트랜잭션 시작
+
+    G->>MQ: Publish "UserDeleted" message<br/>({ userId })
+    MQ-->>G: ✅ Publish 성공 (or 실패 시 롤백)
+    alt Publish 실패
+        G-->>C: ❌ 탈퇴 실패 응답
+        Note right of G: 메시지 발행 실패 → 전체 롤백
+    else Publish 성공
+        G->>DB: UPDATE users SET deleted_at = NOW()
+        DB-->>G: ✅ 성공
+        G-->>C: ✅ 탈퇴 성공 응답
+    end
+
+    Note over W,MQ: (비동기 처리 시작)
+
+    W->>MQ: Consume "UserDeleted" message
+    MQ-->>W: { userId }
+
+    W->>WD: SELECT file_paths FROM user_files WHERE user_id = {userId}
+    WD-->>W: [ "s3://bucket/path1", "s3://bucket/path2", ... ]
+
+    loop 각 파일 경로에 대해
+        W->>S3: DELETE object
+        S3-->>W: ✅ 삭제 성공
+    end
+
+    W->>W: Send email to user<br/>("탈퇴 완료 안내 메일 발송")
+    W-->>MQ: Ack message consumed
 ```
 
-## Support
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+*설계한 시퀀스를 설명하여 mermaid 작성을 Prompt 를 활용했습니다. 
 
-## Stay in touch
+# 테스트 전략 
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+통합 테스트 작성했습니다. 
