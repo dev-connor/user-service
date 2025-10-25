@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common"
+import { Module, forwardRef } from "@nestjs/common"
 import { AuthService } from "./auth.service"
 import { AuthController } from "./auth.controller"
 import { JwtModule } from "@nestjs/jwt"
@@ -16,9 +16,10 @@ import { UserModule } from "../user/user.module"
       signOptions: { expiresIn: ACCESS_TOKEN_EXPIRE_IN },
     }),
     TypeOrmModule.forFeature([RefreshToken]),
-    UserModule, 
+    UserModule,
   ],
   controllers: [AuthController],
   providers: [AuthService],
+  exports: [AuthService], 
 })
 export class AuthModule {}

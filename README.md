@@ -6,6 +6,12 @@ Docker Compose 실행 방법
 docker-compose up -d 
 ```
 
+테스트코드 실행방법
+
+```bash
+npm run test 
+```
+
 # 사용된 기술 스택 및 라이브러리
 
 TypeScript, NestJS, RabbitMQ 
@@ -74,5 +80,4 @@ sequenceDiagram
 
 # 테스트 전략 
 
-미구현했습니다. 
-
+통합 테스트 작성했습니다. 

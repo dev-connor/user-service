@@ -5,6 +5,7 @@ import { Repository } from "typeorm"
 import * as bcrypt from "bcrypt"
 import { UserMapper } from "../user/mapper/user.mapper"
 import { User } from "../user/entities/User"
+import { Module, forwardRef } from "@nestjs/common"
 import { randomBytes } from "crypto"
 import { RefreshToken } from "./entities/RefreshToken"
 import { RefreshTokenMapper } from "./mapper/refreshToken.mapper"
@@ -23,7 +24,7 @@ export class AuthService {
   ) {}
 
   async signUp(requestBody: SignUpRequest) {
-    requestBody.password = await bcrypt.hash(requestBody.password, 10)
+    requestBody.password = await this.hash(requestBody.password)
     await this.userService.save(UserMapper.toEntity(requestBody))
     return "ok"
   }
@@ -42,7 +43,7 @@ export class AuthService {
       const accessToken = await this.jwtService.signAsync(payload)
 
       const newRefreshToken = this.generateRefreshToken()
-      const newRefreshTokenHash = await this.hashToken(newRefreshToken)
+      const newRefreshTokenHash = await this.hash(newRefreshToken)
       const optionalRefreshToken = await this.refreshTokenRepository.findOneBy({
         id: user.refreshTokenId,
       })
@@ -58,6 +59,7 @@ export class AuthService {
         await this.userService.save(user)
       }
       return {
+        userId: user.id,
         accessToken: accessToken,
         refreshToken: newRefreshToken,
       }
@@ -70,8 +72,8 @@ export class AuthService {
     return randomBytes(64).toString("hex")
   }
 
-  async hashToken(token: string): Promise<string> {
-    return await bcrypt.hash(token, 10)
+  async hash(value: string): Promise<string> {
+    return await bcrypt.hash(value, 10)
   }
 
   getRole(email: string): string {

@@ -11,6 +11,7 @@ import * as bcrypt from "bcrypt"
 import { JwtService } from "@nestjs/jwt"
 import { User } from "./entities/User"
 import { GetUserDetailResponse, GetUserListQuery } from "./dto/get-user.dto"
+import { AuthService } from "../auth/auth.service"
 
 @Injectable()
 export class UserService {
@@ -51,14 +52,14 @@ export class UserService {
     await this.userRepository.save(user)
   }
 
-  async update(userId: string, updateUserDto: UpdateUserRequest) {
+  async update(userId: string, request: UpdateUserRequest) {
     const user = await this.userRepository.findOneBy({ id: userId })
     if (user === null) {
       throw new NotFoundException(`User(${userId}) not found`)
     }
-    user.email = updateUserDto.email
-    user.passwordHash = updateUserDto.password
-    user.name = updateUserDto.name
+    user.email = request.email
+    user.passwordHash = await this.hash(request.password)
+    user.name = request.name
     await this.userRepository.save(user)
     return `This action updates a #${userId} user`
   }
@@ -90,4 +91,8 @@ export class UserService {
       console.log("resource 정리")
     }
   }
+
+    async hash(value: string): Promise<string> {
+      return await bcrypt.hash(value, 10)
+    }
 }
